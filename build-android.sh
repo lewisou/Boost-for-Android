@@ -214,7 +214,7 @@ fi
 
 if [ -d "$PROGDIR/$BUILD_DIR" ]; then
 	echo "Cleaning: $BUILD_DIR"
-	rm -f -r $PROGDIR/$BUILD_DIR
+	rm -f -r $PROGDIR/$BUILD_DIR/build
 fi
 
 
@@ -234,10 +234,10 @@ if [ -z "$AndroidNDKRoot" ] ; then
 else
   # User passed the NDK root as a parameter. Make sure the directory
   # exists and make it an absolute path. ".cmd" is for Windows support.
-  if [ ! -f "$AndroidNDKRoot/ndk-build" ] && [ ! -f "$AndroidNDKRoot/ndk-build.cmd" ]; then
-    dump "ERROR: $AndroidNDKRoot is not a valid NDK root"
-    exit 1
-  fi
+  # if [ ! -f "$AndroidNDKRoot/ndk-build" ] && [ ! -f "$AndroidNDKRoot/ndk-build.cmd" ]; then
+  #   dump "ERROR: $AndroidNDKRoot is not a valid NDK root"
+  #   exit 1
+  # fi
   AndroidNDKRoot=$(cd $AndroidNDKRoot; pwd -P)
 fi
 export AndroidNDKRoot
@@ -257,30 +257,30 @@ case "$HOST_OS" in
         PlatformOS=linux
 esac
 
-NDK_RELEASE_FILE=$AndroidNDKRoot"/RELEASE.TXT"
-if [ -f "${NDK_RELEASE_FILE}" ]; then
-    NDK_RN=`cat $NDK_RELEASE_FILE | sed 's/^r\(.*\)$/\1/g'`
-elif [ -n "${AndroidSourcesDetected}" ]; then
-    if [ -f "${ANDROID_BUILD_TOP}/ndk/docs/CHANGES.html" ]; then
-        NDK_RELEASE_FILE="${ANDROID_BUILD_TOP}/ndk/docs/CHANGES.html"
-        NDK_RN=`grep "android-ndk-" "${NDK_RELEASE_FILE}" | head -1 | sed 's/^.*r\(.*\)$/\1/'`
-    elif [ -f "${ANDROID_BUILD_TOP}/ndk/docs/text/CHANGES.text" ]; then
-        NDK_RELEASE_FILE="${ANDROID_BUILD_TOP}/ndk/docs/text/CHANGES.text"
-        NDK_RN=`grep "android-ndk-" "${NDK_RELEASE_FILE}" | head -1 | sed 's/^.*r\(.*\)$/\1/'`
-    else
-        dump "ERROR: can not find ndk version"
-        exit 1
-    fi
-else
-    NDK_RELEASE_FILE=$AndroidNDKRoot"/source.properties"
-    if [ -f "${NDK_RELEASE_FILE}" ]; then
-        NDK_RN=`cat $NDK_RELEASE_FILE | grep 'Pkg.Revision' | sed -E 's/^.*[=] *([0-9]+[.][0-9]+)[.].*/\1/g'`
-    else
-        dump "ERROR: can not find ndk version"
-        exit 1
-    fi
-fi
-
+# NDK_RELEASE_FILE=$AndroidNDKRoot"/RELEASE.TXT"
+# if [ -f "${NDK_RELEASE_FILE}" ]; then
+#     NDK_RN=`cat $NDK_RELEASE_FILE | sed 's/^r\(.*\)$/\1/g'`
+# elif [ -n "${AndroidSourcesDetected}" ]; then
+#     if [ -f "${ANDROID_BUILD_TOP}/ndk/docs/CHANGES.html" ]; then
+#         NDK_RELEASE_FILE="${ANDROID_BUILD_TOP}/ndk/docs/CHANGES.html"
+#         NDK_RN=`grep "android-ndk-" "${NDK_RELEASE_FILE}" | head -1 | sed 's/^.*r\(.*\)$/\1/'`
+#     elif [ -f "${ANDROID_BUILD_TOP}/ndk/docs/text/CHANGES.text" ]; then
+#         NDK_RELEASE_FILE="${ANDROID_BUILD_TOP}/ndk/docs/text/CHANGES.text"
+#         NDK_RN=`grep "android-ndk-" "${NDK_RELEASE_FILE}" | head -1 | sed 's/^.*r\(.*\)$/\1/'`
+#     else
+#         dump "ERROR: can not find ndk version"
+#         exit 1
+#     fi
+# else
+#     NDK_RELEASE_FILE=$AndroidNDKRoot"/source.properties"
+#     if [ -f "${NDK_RELEASE_FILE}" ]; then
+#         NDK_RN=`cat $NDK_RELEASE_FILE | grep 'Pkg.Revision' | sed -E 's/^.*[=] *([0-9]+[.][0-9]+)[.].*/\1/g'`
+#     else
+#         dump "ERROR: can not find ndk version"
+#         exit 1
+#     fi
+# fi
+NDK_RN=15.2
 echo "Detected Android NDK version $NDK_RN"
 
 CONFIG_VARIANT=boost
@@ -338,7 +338,7 @@ case "$NDK_RN" in
 		;;
 	"15.2"|"16.0"|"16.1"|"17.1"|"17.2"|"18.0"|"18.1")
 		TOOLCHAIN=${TOOLCHAIN:-llvm}
-		CXXPATH=$AndroidNDKRoot/toolchains/${TOOLCHAIN}/prebuilt/${PlatformOS}-x86_64/bin/clang++
+		CXXPATH=$AndroidNDKRoot/bin/clang++
 		TOOLSET=clang
 		;;
 	"19.0"|"19.1"|"19.2"|"20.0")
@@ -565,7 +565,7 @@ echo "Building boost for android for $ARCH"
   if [ -n "$LIBRARIES" ]; then
       unset WITHOUT_LIBRARIES
   fi
-
+#         --layout=versioned           \
   { ./bjam -q                         \
          -d+2                         \
          --ignore-site-config         \
@@ -576,7 +576,6 @@ echo "Building boost for android for $ARCH"
          $cxxflags                    \
          link=static                  \
          threading=multi              \
-         --layout=versioned           \
          $WITHOUT_LIBRARIES           \
          -sICONV_PATH=`pwd`/../libiconv-libicu-android/$ARCH \
          -sICU_PATH=`pwd`/../libiconv-libicu-android/$ARCH \
